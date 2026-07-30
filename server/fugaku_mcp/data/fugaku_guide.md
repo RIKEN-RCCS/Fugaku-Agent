@@ -93,6 +93,12 @@ Four low-priority **"spot" variants** (`spot-small`, `spot-large`,
 excluded from fee-based projects, and are capped at a few hours unless the
 node stays uncontested.
 
+**If the project group is `trial`** (the default "Startup Project" every
+new Fugaku account is issued), only the four `spot-*` groups are usable —
+`small`/`large`/`int` are rejected under it. Check `id` for the account's
+actual project groups before assuming `small` is available; a `trial`-only
+account needs `spot-small`/`spot-int` instead.
+
 These ranges are illustrative, not authoritative for your account — always
 check the real numbers with:
 

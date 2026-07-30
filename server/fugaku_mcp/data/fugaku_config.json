@@ -33,6 +33,7 @@
   },
   "resource_groups": {
     "note": "Node/elapse ranges below are the values documented in RIKEN's official user guide as of this port; they can differ per project and the full production list lives on the Fugaku website's 'Resource group configuration' page (not mirrored here — see PORTING.md §2 on why this repo doesn't auto-fetch it). Always confirm with `pjacl --rg <name>` for your own account before relying on a number here.",
+    "trial_project_note": "The 'trial' group (the default Startup Project every new Fugaku account gets) can only submit to the spot-* resource groups (spot-small, spot-int, spot-large, spot-middle) — small/large/int are rejected under it. Check which project group a job will actually run under before offering small/large; run `id` to see whether the account has a real research-project group beyond 'trial'.",
     "small": {"role": "default batch group", "node_range": "1-384", "elapse_max": "72:00:00"},
     "large": {"role": "large batch group", "node_range": "385-12288", "elapse_max": "24:00:00"},
     "int": {"role": "interactive (pjsub --interact default group)", "node_range": "1-12", "elapse_max": "06:00:00 (documented default; varies per project — this account's own pjacl reports up to 24:00:00)"},

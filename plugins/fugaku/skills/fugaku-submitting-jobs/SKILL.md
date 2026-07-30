@@ -12,7 +12,11 @@ description: Submit and describe PJM jobs on Fugaku — resource group selection
 2. Every job needs a project group: set `attributes.account` explicitly, or
    rely on `defaults.group` in `~/.hpc-agent/fugaku.json` (or
    `FUGAKU_GROUP`) — `submit_job` raises a clear error if neither is set.
-   The shared `fugaku` group cannot submit jobs.
+   The shared `fugaku` group cannot submit jobs. If the resolved group is
+   `trial` (the default "Startup Project" every new account gets), only the
+   `spot-*` resource groups are usable — `small`/`large`/`int` will be
+   rejected. Check `run_command_on_cluster("id")` for the account's real
+   project groups before assuming `small` is available.
 3. Fugaku has no GPUs — never set `resources.gpus` or
    `resources.gpu_cores_per_process`.
 4. Set `resources.node_count`; for MPI work also set
