@@ -1,0 +1,14 @@
+{
+  "name": "fugaku-marketplace",
+  "owner": {
+    "name": "William Dawson",
+    "email": "william.dawson@riken.jp"
+  },
+  "plugins": [
+    {
+      "name": "fugaku",
+      "source": "./plugins/fugaku",
+      "description": "PJM job management and documentation search for the RIKEN Fugaku supercomputer."
+    }
+  ]
+}
