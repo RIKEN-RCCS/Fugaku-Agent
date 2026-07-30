@@ -254,9 +254,8 @@ class PJMBackend(SchedulerBackend):
         everything under it, including ~/agent/jobs/, is a *different* area
         type ("home area") and always fails that check otherwise
         ("The current directory is not a data area."). RIKEN's own docs
-        recommend exactly this combination for home-directory submission
-        (JobExecution/JobExecConsiderpoints: "execute from the home
-        directory, with the --no-check-directory option specified").
+        cover this same case (JobExecution/JobExecConsiderpoints) and point
+        to disabling the check as the way to submit from a home directory.
         """
         stamp = time.strftime("%Y%m%d-%H%M%S")
         script_path = write_remote_file(

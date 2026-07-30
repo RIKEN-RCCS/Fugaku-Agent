@@ -73,9 +73,10 @@ The current directory is not a data area. (directory: /vol000N/groupname/usernam
 Specify --no-check-directory option if you want to submit jobs outside the data area.
 ```
 
-RIKEN's own docs recommend exactly this for home-directory submission:
-"execute from the home directory, with the `--no-check-directory` option
-specified" — this plugin's `submit_job` already does that automatically.
+RIKEN's own docs describe this same combination — submitting from a home
+directory, with the check disabled — as the expected way to run a job
+outside a group data volume. This plugin's `submit_job` already passes
+`--no-check-directory` automatically, so you don't need to add it yourself.
 
 ## 3. Resource groups (queues)
 
