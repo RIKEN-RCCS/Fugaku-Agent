@@ -8,7 +8,6 @@ allocation time — gated behind --confirm-billing).
 """
 import argparse
 import asyncio
-import json
 import sys
 from pathlib import Path
 
@@ -19,15 +18,6 @@ from hpc_agent_core.testing import Summary, call, confirm_billing_gate, job_name
 
 SERVER_DIR = Path(__file__).resolve().parent.parent
 RUN_SH = SERVER_DIR / "run.sh"
-
-
-def _as_json(value):
-    """payload() only returns a parsed dict/list for tools whose return type
-    has a derivable MCP output schema (e.g. a pydantic model like Job) —
-    a bare `dict`/`list[dict]` annotation (get_facility, get_resources)
-    falls back to the joined text block instead, per hpc_agent_core.testing's
-    payload() docstring. Parse it here rather than in every call site."""
-    return json.loads(value) if isinstance(value, str) else value
 
 
 async def _docs_session():
@@ -69,14 +59,14 @@ async def check_hpc_server_offline(session: ClientSession) -> None:
     assert "spec" in props, f"submit_job has no 'spec' parameter: {props}"
 
     facility = await call(session, "get_facility", {})
-    facility_data = _as_json(payload(facility))
+    facility_data = payload(facility)
     assert facility_data.get("scheduler", {}).get("submit") == "pjsub", facility_data
     print(f"get_facility -> machine={facility_data.get('machine')!r}")
 
 
 async def check_hpc_server_live(session: ClientSession) -> None:
     resources = await call(session, "get_resources", {})
-    resources_data = _as_json(payload(resources))
+    resources_data = payload(resources)
     assert resources_data, "get_resources returned nothing"
 
     statuses = await call(session, "get_job_statuses", {"job_ids": []})
@@ -100,7 +90,7 @@ async def check_hpc_server_job(session: ClientSession, group: str) -> None:
         "resources": {"node_count": 1},
     }
     result = await call(session, "submit_job", {"spec": spec})
-    submitted = _as_json(payload(result))
+    submitted = payload(result)
     job_id = submitted["job_id"]
     print(f">>> submitted job {job_id} ({submitted.get('script_path')}); polling...")
 
@@ -108,7 +98,7 @@ async def check_hpc_server_job(session: ClientSession, group: str) -> None:
     job = None
     for _ in range(40):
         status = await call(session, "get_job_status", {"job_id": job_id})
-        job = _as_json(payload(status))
+        job = payload(status)
         state = job["status"]["state"]
         if state in ("completed", "failed", "canceled"):
             break

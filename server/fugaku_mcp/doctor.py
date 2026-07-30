@@ -12,13 +12,16 @@ Per hpc_agent_core.doctor's own docstring, this is the expected way to
 diverge: reuse the independently-callable check_* functions that fit
 (config, guide, docs index, embedding), write a local replacement for the
 one that doesn't (ssh+scheduler) — same approach Irene's doctor.py took for
-Bridge.
+Bridge. The PJM-commands-on-PATH loop itself now comes from
+hpc_agent_core.doctor.check_commands_on_path(), promoted there after this
+and Irene's Bridge check independently reimplemented the same ~15 lines.
 """
 import sys
 
 from hpc_agent_core.doctor import (
     OK,
     FAIL,
+    check_commands_on_path,
     check_config_file,
     check_docs_guide_bundled,
     check_docs_index,
@@ -42,22 +45,7 @@ def check_ssh_and_pjm() -> bool:
         print(f"{FAIL} {label}: unexpected response: {output[:200]}")
         return False
     print(f"{OK} {label}: connected to {output.strip().splitlines()[-1]}")
-
-    # Checked one at a time: `command -v` exits non-zero for a single
-    # missing command, and run_command always raises on non-zero exit — a
-    # single combined "command -v a b c" would raise (and lose which ones
-    # were actually found) the moment any one is missing.
-    missing = []
-    for cmd in sorted(_PJM_COMMANDS):
-        try:
-            run_command(f"command -v {cmd}")
-        except RuntimeError:
-            missing.append(cmd)
-    if missing:
-        print(f"{FAIL} PJM commands missing: {', '.join(missing)}")
-        return False
-    print(f"{OK} PJM commands: {', '.join(sorted(_PJM_COMMANDS))}")
-    return True
+    return check_commands_on_path(_PJM_COMMANDS, "PJM commands")
 
 
 def main() -> int:
