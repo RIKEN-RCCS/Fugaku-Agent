@@ -36,6 +36,8 @@ Loaded by default on login and compute nodes.
 | Fortran compiler | `/opt/FJSVxtclanga/tcsds-1.2.43/bin/mpifrtpx` |
 | SSL2 | `/opt/FJSVxtclanga/tcsds-1.2.43/lib64/libssl2mpi.a`, `libssl2mpisve.a`, `libssl2mt.a` |
 
+**Wrapper name convention:** The `px` suffix means *cross* — these are login-node wrappers that target A64FX. On compute nodes, the same compilers are available **without** the `px` suffix: `mpiFCC`, `mpifcc`, `mpifrt`. However, **you should not build on compute nodes**. Cross-compile on the login node with `*px` wrappers, then submit the binary to compute nodes. Building inside a `pjsub` job is an anti-pattern — compute nodes have limited toolchain mounts and slower filesystems.
+
 ### Key flags
 
 - `-Kfast` — Fujitsu's aggressive optimization (equivalent to `-O3` + architecture-specific tuning for A64FX)
@@ -54,14 +56,13 @@ mpiFCCpx -show
   main.cpp -o myapp -lpthread
 ```
 
-**Compute-node `PATH` note:** The TCS/DSP compilers are in `PATH` on the login
-node by default, but compute nodes may not inherit this. In job scripts,
-always use the full paths (`/opt/FJSVxtclanga/tcsds-1.2.43/bin/mpiFCCpx`, etc.)
-or explicitly add them to `PATH`:
+**Build on login node, run on compute nodes:** The `*px` wrappers exist on the login node for cross-compilation. A compute-node `pjsub` job should **run the pre-built binary**, not compile. If you must use a compiler inside a job (e.g. for JIT or test suites), use the compute-node native names (`mpiFCC`, `mpifcc`, `mpifrt`) or add the TCS `bin` directory to `PATH`:
 
 ```sh
 export PATH="/opt/FJSVxtclanga/tcsds-1.2.43/bin:${PATH}"
 ```
+
+But in practice, compile-time on compute nodes is slower and the filesystem is shared — cross-compile on the login node and submit the binary instead.
 
 With CMake:
 
