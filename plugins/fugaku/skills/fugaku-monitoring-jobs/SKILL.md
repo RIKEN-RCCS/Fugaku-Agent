@@ -40,6 +40,6 @@ finishes, search its working directory with:
 find . -path "*output.${PJM_JOBID:-<JOBID>}*" -name "stdout*" | sort
 ```
 
-Programs that write their own log files (e.g. SBD's `diag.log`) may also end
+Programs that write their own log files (e.g. a rank-local `output.log`) may also end
 up empty if the rank's filesystem view is isolated — in that case the per-rank
 `stdout*` files are the authoritative output.
