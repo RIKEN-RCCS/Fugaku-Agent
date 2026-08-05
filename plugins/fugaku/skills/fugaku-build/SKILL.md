@@ -8,7 +8,7 @@ Guide for building HPC applications on Fugaku (A64FX). Documents four verified c
 |---|---|---|---|---|
 | Fujitsu TCS/DSP 1.2.43 (default) | `mpiFCCpx` | Fujitsu MPI 3.1 | SSL2 (static `.a`) | ✅ yes — baseline |
 | GCC cross 11.2.1 | `mpiFCCpx`¹ | Fujitsu MPI 3.1 | Spack OpenBLAS `.so` | ⚠️ builds correctly; runtime LD_LIBRARY_PATH gotcha (see below) |
-| LLVM/Clang 22.1.0 | `mpiclang++` | Fujitsu MPI 3.1 | Spack OpenBLAS `.so` | ✅ yes — runtime needs `libomp.so` in `LD_LIBRARY_PATH` |
+| LLVM/Clang 22.1.0 | `mpiclang++` | Fujitsu MPI 3.1 | Spack OpenBLAS `.so`, or experimental `fjlapack(ex)sve` (see below) | ✅ yes — runtime needs `libomp.so` in `LD_LIBRARY_PATH` |
 | Spack GCC 15.1.0 + OpenMPI + OpenBLAS | `mpicxx` | Spack OpenMPI 5.0.8 | Spack OpenBLAS `.so` | ⚠️ configure+build ok, OpenMPI is aarch64-only on login node |
 
 ¹ After GCC cross activation, `mpiFCCpx -show` reveals the actual cross compiler underneath while keeping Fujitsu MPI wrapper flags.
@@ -21,7 +21,7 @@ Fujitsu's SSL2 BLAS/LAPACK is **ABI-incompatible with GCC and Clang**. It uses a
 undefined reference to 'dsyev_'
 ```
 
-**Fix:** Use Spack OpenBLAS instead. It exports standard mangled symbols and both GCC and LLVM link against it cleanly.
+**Fix:** Use Spack OpenBLAS instead. It exports standard mangled symbols and both GCC and LLVM link against it cleanly. Under LLVM specifically, there's also a second option — Fujitsu's own `fjlapacksve`/`fjlapackexsve` libraries, a separate build from SSL2 proper — see "Fujitsu math libraries with LLVM (experimental)" under the LLVM/Clang section below.
 
 ---
 
@@ -155,6 +155,31 @@ cmake -S . -B build/llvm-cross -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_CXX_COMPILER=mpiclang++ \
   -DBLAS_LIBRARIES="${OB}" -DLAPACK_LIBRARIES="${OB}"
 ```
+
+### Fujitsu math libraries with LLVM (experimental)
+
+An alternative to Spack OpenBLAS: Fujitsu's compiler manual (§3.3.3, "How to use math libraries of Fujitsu Compiler") documents linking Fujitsu's own BLAS/LAPACK directly under LLVM. **This is a different library from SSL2** (`libssl2mpi.a` etc., covered above) — SSL2 itself is ABI-incompatible with Clang; `fjlapacksve`/`fjlapackexsve` are a separate build that Fujitsu documents specifically as working with LLVM. Marked "experimental" by Fujitsu themselves, and use of Fujitsu-compiler-provided libraries with other compiler environments is explicitly **not supported** by Fujitsu — if you hit runtime issues, fall back to Spack OpenBLAS instead.
+
+Two variants:
+
+- `-lfjlapacksve` — BLAS + LAPACK, serial
+- `-lfjlapackexsve` — BLAS + LAPACK, multi-threaded
+
+```sh
+module load LLVM/llvmorg-22.1.0
+
+INCLUDE="-idirafter /opt/FJSVxtclanga/tcsds-latest/include"
+LIBS="-L /opt/FJSVxtclanga/tcsds-latest/lib64"
+FLIB="-lfjlapacksve -lfj90i -lfj90f -lfjsrcinfo -lfjcrt -lelf"                                    # serial
+FLIB_M="-lfjlapackexsve -lfjomphk -lfjomp -lfj90i -lfj90f -lfjsrcinfo -lfjcrt -lfjompcrt -lelf"   # multi-threaded
+
+clang++ -O2 sample.cpp ${INCLUDE} ${LIBS} ${FLIB}
+clang++ -O2 sample.cpp ${INCLUDE} ${LIBS} ${FLIB_M}
+flang -O2 sample.f ${LIBS} ${FLIB}
+flang -O2 sample.f ${LIBS} ${FLIB_M}
+```
+
+**Verified (link-time only, this session):** both `${FLIB}`/`${FLIB_M}` variants confirmed against a real `dgemm_` call — `clang++` links cleanly with `LLVM/llvmorg-22.1.0` loaded, and `/opt/FJSVxtclanga/tcsds-latest/{include,lib64}` and both libraries exist at the documented paths. Output is a valid aarch64 ELF cross-binary, same as every other LLVM build in this section — run it on a compute node, not the login node. Runtime correctness (does `dgemm_` actually produce right answers under this link) was **not** verified — Fujitsu's own text only claims the link step, and says to discontinue use if runtime issues appear.
 
 **Runtime note:** The LLVM OpenMP runtime (`libomp.so`) is **not** in the default compute-node library search path. You must add it to `LD_LIBRARY_PATH` in your job script:
 
